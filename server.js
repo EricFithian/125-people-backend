@@ -4,7 +4,7 @@
 require('dotenv').config();
 
 // pull PORT from .env, set default value to 3000
-const { PORT = 3000, MONGODB_URL } = process.env;
+const { PORT = 4321, MONGODB_URL } = process.env;
 
 // import express
 const express = require('express');
@@ -30,13 +30,20 @@ mongoose.connection
 
 // MODELS
 const PeopleSchema = new mongoose.Schema({
-    name: String,
-    image: String,
+    name: {
+        type: String,
+        required: [true, "Please make sure to have a name"]
+    },
+    image: {
+        type: String,
+        unique: [true, "This image already was used"],
+        required: [true, "Please make sure to have an image"]
+    },
     title: String
 })
 
 const People = mongoose.model('People', PeopleSchema);
-
+// const corsOptions = ...list of sites that are ok
 // MIDDLEWARE
 app.use(cors()) // to prevent cors errors, open access to all origins
 app.use(morgan('dev')) // logging http responses
@@ -52,7 +59,14 @@ app.get('/', (req, res) => {
 // get people route
 app.get('/people', async (req, res) => {
     try {
-        res.json(await People.find({}));
+        console.log(req.query);
+        let peopleFound
+        if(req.query.q) {
+            peopleFound = await People.find({name: req.query.q})
+        } else {
+            peopleFound = await People.find({})
+        }
+        res.json(peopleFound);
     } catch (error) {
         res.status(400).json(error);
     }
@@ -61,7 +75,10 @@ app.get('/people', async (req, res) => {
 // create people route
 app.post('/people', async (req, res) => {
     try {
-        res.json(await People.create(req.body))
+        console.log(`req.body is ${req.body}`)
+        let createdPerson = await People.create(req.body)
+        console.log(`created person is ${createdPerson}`)
+        res.json(createdPerson)
     } catch (error) {
         res.status(400).json(error);
     }
@@ -70,7 +87,9 @@ app.post('/people', async (req, res) => {
 // update people route
 app.put('/people/:id', async (req, res) => {
     try {
-        res.json(await People.findByIdAndUpdate(req.params.id, req.body))
+        let updatedPerson = await People.findByIdAndUpdate(req.params.id, req.body)
+        console.log(updatedPerson)
+        res.json(updatedPerson)
     } catch (error) {
         res.status(400).json(error);
     }
@@ -79,7 +98,9 @@ app.put('/people/:id', async (req, res) => {
 // delete people route
 app.delete('/people/:id', async (req, res) => {
     try {
-        res.json(await People.findByIdAndRemove(req.params.id))
+        let deletedPerson = await People.findByIdAndRemove(req.params.id)
+        console.log(deletedPerson)
+        res.json(deletedPerson)
     } catch (error) {
         res.status(400).json(error);
     }
